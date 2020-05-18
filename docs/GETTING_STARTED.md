@@ -72,6 +72,7 @@ as your database super-user (generally, `postgres`):
 ```sql
 CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 ```
 
 Note that these must be run on the database you've created for ShieldBattery (e.g. you should

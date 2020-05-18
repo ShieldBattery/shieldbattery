@@ -18,6 +18,7 @@ class Channel {
     this.highTraffic = props.high_traffic
     this.topic = props.topic
     this.password = props.password
+    this.userCount = props.user_count
   }
 }
 
@@ -265,6 +266,67 @@ export async function findChannel(channelName) {
   try {
     const result = await client.query('SELECT * FROM channels WHERE name = $1', [channelName])
     return result.rows.length < 1 ? null : new Channel(result.rows[0])
+  } finally {
+    done()
+  }
+}
+
+export async function listChannels(limit, page) {
+  // TODO(2Pac): Filter the private channels from the list of channels, except those that we're in
+  const query = `
+    SELECT c.*, COUNT(jc.*) AS user_count
+    FROM channels AS c LEFT JOIN joined_channels AS jc
+    ON c.name = jc.channel_name
+    GROUP BY c.name
+    ORDER BY user_count DESC
+    LIMIT $1
+    OFFSET $2
+  `
+  const params = [limit, page]
+
+  const { client, done } = await db()
+  try {
+    const result = await client.query(query, params)
+    return { channels: result.rows.map(row => new Channel(row)) }
+  } finally {
+    done()
+  }
+}
+
+export async function searchChannels(searchStr, limit, page) {
+  // TODO(2Pac): Don't search the private channels that we're not in
+  // This query does the following:
+  //   - gets the user count of the channel with most users (so the user count can be normalized)
+  //   - searches the channels with the given query and attaches the user count to each channel
+  //   - ranks the results based on the similarity of strings, as well as the user count
+  const query = `
+    WITH ch AS (
+      SELECT MAX(c.user_count) AS max_user_count
+      FROM (
+        SELECT COUNT(*) AS user_count
+        FROM joined_channels
+        GROUP BY channel_name
+      ) AS c
+    ), search AS (
+      SELECT c.*, COUNT(jc.*) AS user_count, ch.max_user_count
+      FROM ch, channels AS c LEFT JOIN joined_channels AS jc
+      ON c.name = jc.channel_name
+      GROUP BY c.name, ch.max_user_count
+      HAVING name ILIKE '%$1%'
+    )
+    SELECT *, (similarity(name, $1) * 0.7) + ((user_count / max_user_count) * 0.3) AS rank
+    FROM search
+    ORDER BY rank DESC
+    LIMIT $2
+    OFFSET $3
+  `
+  const escapedStr = searchStr.replace(/[_%\\]/g, '\\$&')
+  const params = [escapedStr, limit, page]
+
+  const { client, done } = await db()
+  try {
+    const result = await client.query(query, params)
+    return { channels: result.rows.map(row => new Channel(row)) }
   } finally {
     done()
   }
