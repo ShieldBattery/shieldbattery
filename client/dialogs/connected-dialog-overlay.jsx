@@ -5,6 +5,7 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group'
 import EditAccount from '../auth/edit-account'
 import Portal from '../material/portal'
 import SimpleDialog from './simple-dialog'
+import ReplayDialog from '../replays/replay-dialog'
 import Settings from '../settings/settings'
 import StarcraftHealthCheckupDialog from '../starcraft/starcraft-health'
 import StarcraftPathDialog from '../settings/starcraft-path-dialog'
@@ -55,6 +56,8 @@ class ConnectedDialogOverlay extends React.Component {
           : { component: StarcraftPathDialog, modal: false }
       case 'simple':
         return { component: SimpleDialog, modal: false }
+      case 'replay':
+        return { component: ReplayDialog, modal: false }
       case 'starcraftHealth':
         return { component: StarcraftHealthCheckupDialog, modal: false }
       case 'starcraftPath':

@@ -4,8 +4,7 @@ import path from 'path'
 import { remote } from 'electron'
 
 import BrowseFiles from '../file-browser/browse-files'
-import { startReplay } from './action-creators'
-import { closeOverlay } from '../activities/action-creators'
+import { openDialog } from '../dialogs/action-creators'
 
 import Replay from '../icons/material/ic_movie_black_24px.svg'
 
@@ -17,7 +16,7 @@ function getReplayFolder() {
 export default class Replays extends React.Component {
   render() {
     const fileTypes = {
-      rep: { icon: <Replay />, onSelect: this.onStartReplay },
+      rep: { icon: <Replay />, onSelect: this.onOpenDialogReplay },
     }
     const defaultFolder = {
       id: 'default',
@@ -35,8 +34,12 @@ export default class Replays extends React.Component {
     return <BrowseFiles {...props} />
   }
 
-  onStartReplay = replay => {
-    this.props.dispatch(closeOverlay())
-    this.props.dispatch(startReplay(replay))
+  onOpenDialogReplay = replay => {
+    this.props.dispatch(
+      openDialog('replay', {
+        replay,
+        hasButton: true,
+      }),
+    )
   }
 }
