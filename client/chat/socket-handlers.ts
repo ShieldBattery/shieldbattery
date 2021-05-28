@@ -1,69 +1,9 @@
 import { NydusClient } from 'nydus-client'
+import { ChatEvent } from '../../common/chat'
 import { TypedIpcRenderer } from '../../common/ipc'
-import {
-  CHAT_INIT_CHANNEL,
-  CHAT_UPDATE_JOIN,
-  CHAT_UPDATE_LEAVE,
-  CHAT_UPDATE_LEAVE_SELF,
-  CHAT_UPDATE_MESSAGE,
-  CHAT_UPDATE_USER_ACTIVE,
-  CHAT_UPDATE_USER_IDLE,
-  CHAT_UPDATE_USER_OFFLINE,
-} from '../actions'
 import { dispatch, Dispatchable } from '../dispatch-registry'
 
 const ipcRenderer = new TypedIpcRenderer()
-
-// TODO(tec27): Put this in a common place and use it to restrict what the server can send as well
-type ChatEvent =
-  | ChatInitEvent
-  | ChatJoinEvent
-  | ChatLeaveEvent
-  | ChatMessageEvent
-  | ChatUserActiveEvent
-  | ChatUserIdleEvent
-  | ChatUserOfflineEvent
-
-interface ChatInitEvent {
-  action: 'init'
-  activeUsers: string[]
-}
-
-interface ChatJoinEvent {
-  action: 'join'
-  user: string
-}
-
-interface ChatLeaveEvent {
-  action: 'leave'
-  user: string
-  newOwner?: string
-}
-
-interface ChatMessageEvent {
-  action: 'message'
-  id: string
-  sent: number
-  user: string
-  data: {
-    text: string
-  }
-}
-
-interface ChatUserActiveEvent {
-  action: 'userActive'
-  user: string
-}
-
-interface ChatUserIdleEvent {
-  action: 'userIdle'
-  user: string
-}
-
-interface ChatUserOfflineEvent {
-  action: 'userOffline'
-  user: string
-}
 
 type EventToActionMap = {
   [E in ChatEvent['action']]?: (
@@ -75,22 +15,22 @@ type EventToActionMap = {
 const eventToAction: EventToActionMap = {
   init(channel, event) {
     return {
-      type: CHAT_INIT_CHANNEL,
+      type: '@chat/initChannel',
       payload: {
         channel,
         activeUsers: event.activeUsers,
       },
-    } as any
+    }
   },
 
   join(channel, event) {
     return {
-      type: CHAT_UPDATE_JOIN,
+      type: '@chat/updateJoin',
       payload: {
         channel,
         user: event.user,
       },
-    } as any
+    }
   },
 
   leave: (channel, event) => (dispatch, getState) => {
@@ -99,20 +39,20 @@ const eventToAction: EventToActionMap = {
     if (user === event.user) {
       // It was us who left the channel
       dispatch({
-        type: CHAT_UPDATE_LEAVE_SELF,
+        type: '@chat/updateLeaveSelf',
         payload: {
           channel,
         },
-      } as any)
+      })
     } else {
       dispatch({
-        type: CHAT_UPDATE_LEAVE,
+        type: '@chat/updateLeave',
         payload: {
           channel,
           user: event.user,
           newOwner: event.newOwner,
         },
-      } as any)
+      })
     }
   },
 
@@ -122,7 +62,7 @@ const eventToAction: EventToActionMap = {
 
     // TODO(tec27): handle different types of messages (event.data.type)
     return {
-      type: CHAT_UPDATE_MESSAGE,
+      type: '@chat/updateMessage',
       payload: {
         channel,
         id: event.id,
@@ -130,37 +70,37 @@ const eventToAction: EventToActionMap = {
         user: event.user,
         message: event.data.text,
       },
-    } as any
+    }
   },
 
   userActive(channel, event) {
     return {
-      type: CHAT_UPDATE_USER_ACTIVE,
+      type: '@chat/updateUserActive',
       payload: {
         channel,
         user: event.user,
       },
-    } as any
+    }
   },
 
   userIdle(channel, event) {
     return {
-      type: CHAT_UPDATE_USER_IDLE,
+      type: '@chat/updateUserIdle',
       payload: {
         channel,
         user: event.user,
       },
-    } as any
+    }
   },
 
   userOffline(channel, event) {
     return {
-      type: CHAT_UPDATE_USER_OFFLINE,
+      type: '@chat/updateUserOffline',
       payload: {
         channel,
         user: event.user,
       },
-    } as any
+    }
   },
 }
 

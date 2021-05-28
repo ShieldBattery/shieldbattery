@@ -47,50 +47,8 @@ export const AUDIO_MANAGER_INITIALIZED = 'AUDIO_MANAGER_INITIALIZED'
 export const BETA_CREATE_INVITE_BEGIN = 'BETA_CREATE_INVITE_BEGIN'
 export const BETA_CREATE_INVITE = 'BETA_CREATE_INVITE'
 
-// Notifies that a user has brought a channel into a visible state (and things like last read
-// message should be updated)
-export const CHAT_CHANNEL_ACTIVATE = 'CHAT_CHANNEL_ACTIVATE'
-// Notifies that a chat channel is no longer visible to the user, and can be cleaned up as
-// appropriate (trimming its messsage list to a minimal amount, for instance)
-export const CHAT_CHANNEL_DEACTIVATE = 'CHAT_CHANNEL_DEACTIVATE'
-// A chat channel that we're in has some initial data we should use to initialize it in the store
-export const CHAT_INIT_CHANNEL = 'CHAT_INIT_CHANNEL'
-// We are starting the process of joining a new channel
-export const CHAT_JOIN_CHANNEL_BEGIN = 'CHAT_JOIN_CHANNEL_BEGIN'
-// The server has responded with success/failure of our joining the channel; if the channel hasn't
-// exist up until we joined it, we'll get full permissions in it
-export const CHAT_JOIN_CHANNEL = 'CHAT_JOIN_CHANNEL'
-// We are starting the process of leaving a channel we're in
-export const CHAT_LEAVE_CHANNEL_BEGIN = 'CHAT_LEAVE_CHANNEL_BEGIN'
-// The server has responded with success/failure of our leaving the channel; if we had any
-// permissions in it, they are lost now, even if we rejoin it (unless it's empty when we do)
-export const CHAT_LEAVE_CHANNEL = 'CHAT_LEAVE_CHANNEL'
 // The server has finished giving us our initial chat data (e.g what channels we are in) on connect
 export const CHAT_LOADING_COMPLETE = 'CHAT_LOADING_COMPLETE'
-// We're requesting some older chat messages from a channel
-export const CHAT_LOAD_CHANNEL_HISTORY_BEGIN = 'CHAT_LOAD_CHANNEL_HISTORY_BEGIN'
-// The server has responded to our request for older chat messages (with message, or an error)
-export const CHAT_LOAD_CHANNEL_HISTORY = 'CHAT_LOAD_CHANNEL_HISTORY'
-// We're requesting the full user list for a channel
-export const CHAT_LOAD_USER_LIST_BEGIN = 'CHAT_LOAD_USER_LIST_BEGIN'
-// The server has responded to our request for the full user list
-export const CHAT_LOAD_USER_LIST = 'CHAT_LOAD_USER_LIST'
-export const CHAT_SEND_MESSAGE_BEGIN = 'CHAT_SEND_MESSAGE_BEGIN'
-export const CHAT_SEND_MESSAGE = 'CHAT_SEND_MESSAGE'
-// A user has joined the channel we're in
-export const CHAT_UPDATE_JOIN = 'CHAT_UPDATE_JOIN'
-// A user has left the channel we're in
-export const CHAT_UPDATE_LEAVE = 'CHAT_UPDATE_LEAVE'
-// We have left the channel we're in
-export const CHAT_UPDATE_LEAVE_SELF = 'CHAT_UPDATE_LEAVE_SELF'
-// We've received a message from a user in one of our joined channels
-export const CHAT_UPDATE_MESSAGE = 'CHAT_UPDATE_MESSAGE'
-// A user in one of our chat channels has become active (non-idle and online)
-export const CHAT_UPDATE_USER_ACTIVE = 'CHAT_UPDATE_USER_ACTIVE'
-// A user in one of our chat channels has become idle (still online, but not active)
-export const CHAT_UPDATE_USER_IDLE = 'CHAT_UPDATE_USER_IDLE'
-// A user in one of our chat channels has gone offline
-export const CHAT_UPDATE_USER_OFFLINE = 'CHAT_UPDATE_USER_OFFLINE'
 
 // We have clicked on a folder inside the file browser
 export const FILE_BROWSER_CHANGE_PATH = 'FILE_BROWSER_CHANGE_PATH'

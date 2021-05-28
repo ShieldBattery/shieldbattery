@@ -1,6 +1,16 @@
 import { Map, Record, Set } from 'immutable'
 import { NydusServer } from 'nydus'
 import { singleton } from 'tsyringe'
+import {
+  ChatInitEvent,
+  ChatJoinEvent,
+  ChatLeaveEvent,
+  ChatMessage,
+  ChatMessageEvent,
+  ChatUser,
+  ChatUserActiveEvent,
+  ChatUserOfflineEvent,
+} from '../../../common/chat'
 import filterChatMessage from '../messaging/filter-chat-message'
 import { UserSocketsGroup, UserSocketsManager } from '../websockets/socket-groups'
 import {
@@ -65,7 +75,12 @@ export default class ChatService {
     this.state = this.state
       .updateIn(['channels', originalChannelName], (s = Set()) => s.add(userName))
       .updateIn(['users', userName], (s = Set()) => s.add(originalChannelName))
-    this.publishToChannel(originalChannelName, { action: 'join', user: userName })
+
+    const joinEventData: ChatJoinEvent = {
+      action: 'join',
+      user: userName,
+    }
+    this.publishToChannel(originalChannelName, joinEventData)
     this.subscribeUserToChannel(userSockets, originalChannelName)
   }
 
@@ -96,11 +111,13 @@ export default class ChatService {
     this.state = this.state.updateIn(['users', userSockets.name], u =>
       u.delete(originalChannelName),
     )
-    this.publishToChannel(originalChannelName, {
+
+    const leaveEventData: ChatLeaveEvent = {
       action: 'leave',
       user: userSockets.name,
       newOwner: result.newOwner,
-    })
+    }
+    this.publishToChannel(originalChannelName, leaveEventData)
     this.unsubscribeUserFromChannel(userSockets, originalChannelName)
   }
 
@@ -124,13 +141,14 @@ export default class ChatService {
       text,
     })
 
-    this.publishToChannel(originalChannelName, {
-      id: result.msgId,
+    const messageEventData: ChatMessageEvent = {
       action: 'message',
+      id: result.msgId,
       user: result.userName,
-      sent: +result.sent,
+      sent: Number(result.sent),
       data: result.data,
-    })
+    }
+    this.publishToChannel(originalChannelName, messageEventData)
   }
 
   async getChannelHistory(
@@ -158,12 +176,16 @@ export default class ChatService {
       limit,
       beforeTime && beforeTime > -1 ? new Date(beforeTime) : undefined,
     )
-    return messages.map(m => ({
-      id: m.msgId,
-      user: m.userName,
-      sent: +m.sent,
-      data: m.data,
-    }))
+    return messages.map(m => {
+      const message: ChatMessage = {
+        id: m.msgId,
+        user: m.userName,
+        sent: Number(m.sent),
+        data: m.data,
+      }
+
+      return message
+    })
   }
 
   async getChannelUsers(channelName: string, userName: string) {
@@ -180,7 +202,11 @@ export default class ChatService {
     }
 
     const users = await getUsersForChannel(originalChannelName)
-    return users.map(u => u.userName)
+    return users.map(u => {
+      const user: ChatUser = u.userName
+
+      return user
+    })
   }
 
   async getOriginalChannelName(channelName: string) {
@@ -206,12 +232,11 @@ export default class ChatService {
   }
 
   private subscribeUserToChannel(userSockets: UserSocketsGroup, channelName: string) {
-    userSockets.subscribe(getChannelPath(channelName), () => {
-      return {
-        action: 'init',
-        activeUsers: this.state.channels.get(channelName),
-      }
-    })
+    const initEventData: ChatInitEvent = {
+      action: 'init',
+      activeUsers: (this.state.channels.get(channelName) ?? Set()).toArray(),
+    }
+    userSockets.subscribe(getChannelPath(channelName), () => initEventData)
   }
 
   unsubscribeUserFromChannel(user: UserSocketsGroup, channelName: string) {
@@ -233,7 +258,11 @@ export default class ChatService {
       .mergeDeepIn(['channels'], inChannels)
       .setIn(['users', userSockets.name], channelSet)
     for (const { channelName: chan } of channelsForUser) {
-      this.publishToChannel(chan, { action: 'userActive', user: userSockets.name })
+      const userActiveEventData: ChatUserActiveEvent = {
+        action: 'userActive',
+        user: userSockets.name,
+      }
+      this.publishToChannel(chan, userActiveEventData)
       this.subscribeUserToChannel(userSockets, chan)
     }
     userSockets.subscribe(`${userSockets.getPath()}/chat`, () => ({ type: 'chatReady' }))
@@ -254,7 +283,11 @@ export default class ChatService {
     this.state = this.state.deleteIn(['users', userName])
 
     for (const c of channels.values()) {
-      this.publishToChannel(c, { action: 'userOffline', user: userName })
+      const userOfflineEventData: ChatUserOfflineEvent = {
+        action: 'userOffline',
+        user: userName,
+      }
+      this.publishToChannel(c, userOfflineEventData)
     }
   }
 }

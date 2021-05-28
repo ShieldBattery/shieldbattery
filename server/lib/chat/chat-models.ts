@@ -48,13 +48,18 @@ export interface UserChannelsEntry {
   joinDate: Date
 }
 
+export interface ChatMessageData {
+  // TODO(tec27): this can be more strongly typed
+  type: string
+  text: string
+}
+
 export interface DbChatMessage {
   msgId: string
   userName: string
   channelName: string
   sent: Date
-  // TODO(tec27): this can be more strongly typed
-  data: Record<string, unknown>
+  data: ChatMessageData
 }
 
 export async function getChannelsForUser(userId: number): Promise<UserChannelsEntry[]> {

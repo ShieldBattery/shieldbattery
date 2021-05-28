@@ -1,4 +1,5 @@
 import { AuthActions } from './auth/actions'
+import { ChatActions } from './chat/actions'
 import { DialogActions } from './dialogs/actions'
 import { LadderActions } from './ladder/actions'
 import { MatchmakingActions } from './matchmaking/actions'
@@ -6,6 +7,7 @@ import { NotificationActions } from './notifications/actions'
 
 type AllActions =
   | AuthActions
+  | ChatActions
   | DialogActions
   | LadderActions
   | MatchmakingActions
