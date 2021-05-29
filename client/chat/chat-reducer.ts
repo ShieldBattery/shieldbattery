@@ -309,7 +309,7 @@ export default keyedReducer(new ChatState(), {
     })
   },
 
-  [NETWORK_SITE_CONNECTED](state, action) {
+  [NETWORK_SITE_CONNECTED as any]() {
     return new ChatState()
   },
 })
