@@ -9,9 +9,11 @@ import {
   AcceptPartyInviteServerBody,
   ChangeLeaderServerBody,
   InviteToPartyServerBody,
+  PartyServiceErrorCode,
   PartyUser,
   SendChatMessageServerBody,
 } from '../../../common/parties'
+import { HttpErrorWithPayload } from '../errors/error-with-payload'
 import { featureEnabled } from '../flags/feature-enabled'
 import { httpApi, HttpApi } from '../http/http-api'
 import ensureLoggedIn from '../session/ensure-logged-in'
@@ -19,7 +21,7 @@ import createThrottle from '../throttle/create-throttle'
 import throttleMiddleware from '../throttle/middleware'
 import { findUserById } from '../users/user-model'
 import { validateRequest } from '../validation/joi-validator'
-import PartyService, { PartyServiceError, PartyServiceErrorCode } from './party-service'
+import PartyService, { PartyServiceError } from './party-service'
 
 const invitesThrottle = createThrottle('partyInvites', {
   rate: 40,
@@ -58,15 +60,15 @@ function convertPartyServiceError(err: Error) {
     case PartyServiceErrorCode.NotFoundOrNotInvited:
     case PartyServiceErrorCode.NotFoundOrNotInParty:
     case PartyServiceErrorCode.InvalidAction:
-      throw new httpErrors.BadRequest(err.message)
+      throw new HttpErrorWithPayload(400, err.message, { code: err.code })
     case PartyServiceErrorCode.InsufficientPermissions:
-      throw new httpErrors.Forbidden(err.message)
+      throw new HttpErrorWithPayload(403, err.message, { code: err.code })
     case PartyServiceErrorCode.PartyFull:
-      throw new httpErrors.Conflict(err.message)
+      throw new HttpErrorWithPayload(409, err.message, { code: err.code })
     case PartyServiceErrorCode.UserOffline:
-      throw new httpErrors.NotFound(err.message)
+      throw new HttpErrorWithPayload(404, err.message, { code: err.code })
     case PartyServiceErrorCode.NotificationFailure:
-      throw new httpErrors.InternalServerError(err.message)
+      throw new HttpErrorWithPayload(500, err.message, { code: err.code })
     default:
       assertUnreachable(err.code)
   }
