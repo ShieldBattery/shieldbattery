@@ -93,18 +93,18 @@ export default class PartyService {
         )
       }
 
-      if (party.invites.has(invitedUser.id)) {
-        throw new PartyServiceError(
-          PartyServiceErrorCode.InvalidAction,
-          'An invite already exists for this user',
-        )
-      }
-
       if (party.members.has(invitedUser.id)) {
         throw new PartyServiceError(
           PartyServiceErrorCode.InvalidAction,
           'This user is already a member of this party',
         )
+      }
+
+      // An invite might already exist for a user, but we don't treat that as an error as that would
+      // reveal to the inviter that the person has declined their first invite, which should be
+      // treated as private information.
+      if (party.invites.has(invitedUser.id)) {
+        return party
       }
 
       party.invites.set(invitedUser.id, invitedUser)
@@ -166,11 +166,6 @@ export default class PartyService {
     }
 
     party.invites.delete(target.id)
-    this.publisher.publish(getPartyPath(party.id), {
-      type: 'decline',
-      target,
-      time: this.clock.now(),
-    })
   }
 
   removeInvite(partyId: string, removingUser: PartyUser, target: PartyUser) {
@@ -191,12 +186,10 @@ export default class PartyService {
       )
     }
 
-    if (!party.invites.has(target.id)) {
-      throw new PartyServiceError(
-        PartyServiceErrorCode.InvalidAction,
-        "Can't remove invite for a user that wasn't invited",
-      )
-    }
+    // If an invite doesn't exist for a user it most likely means that the user has already declined
+    // it. We don't throw an error here so we don't divulge that information to the party. However,
+    // we still publish the 'uninvite' event to the party so the party members can clean up their
+    // state on the client.
 
     party.invites.delete(target.id)
     this.publisher.publish(getPartyPath(party.id), {

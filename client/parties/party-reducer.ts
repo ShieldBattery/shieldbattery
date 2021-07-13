@@ -86,16 +86,6 @@ export default keyedReducer(new PartyRecord(), {
     return state.deleteIn(['invites', target.id])
   },
 
-  ['@parties/updateDecline'](state, action) {
-    const { partyId, target } = action.payload
-
-    if (partyId !== state.id) {
-      return state
-    }
-
-    return state.deleteIn(['invites', target.id])
-  },
-
   ['@parties/updateJoin'](state, action) {
     const { partyId, user, time } = action.payload
 
