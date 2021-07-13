@@ -3,6 +3,7 @@ import { TypedIpcRenderer } from '../../common/ipc'
 import { PartyEvent } from '../../common/parties'
 import { dispatch, Dispatchable } from '../dispatch-registry'
 import { openSnackbar } from '../snackbars/action-creators'
+import { navigateToParty } from './action-creators'
 
 const ipcRenderer = new TypedIpcRenderer()
 
@@ -14,15 +15,23 @@ type EventToActionMap = {
 }
 
 const eventToAction: EventToActionMap = {
-  init: (partyId, event) => {
+  init: (partyId, event) => (dispatch, getState) => {
     const { party, time, userInfos } = event
-    return {
+    const selfUser = getState().auth.user
+
+    dispatch({
       type: '@parties/init',
       payload: {
         party,
         time,
         userInfos,
       },
+    })
+
+    if (selfUser.id !== party.leader.id) {
+      // If we have joined someone else's party, navigate to the party view immediately. Party
+      // leaders are not navigated as they might want to invite more people from wherever they are.
+      navigateToParty(party.id)
     }
   },
 
