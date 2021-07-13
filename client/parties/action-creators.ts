@@ -4,9 +4,10 @@ import {
   SendChatMessageServerBody,
 } from '../../common/parties'
 import { ThunkAction } from '../dispatch-registry'
+import { push } from '../navigation/routing'
 import { clientId } from '../network/client-id'
 import fetch from '../network/fetch'
-import { apiUrl } from '../network/urls'
+import { apiUrl, urlPath } from '../network/urls'
 import { openSnackbar } from '../snackbars/action-creators'
 import { ActivateParty, DeactivateParty } from './actions'
 
@@ -190,4 +191,8 @@ export function deactivateParty(partyId: string): DeactivateParty {
     type: '@parties/deactivateParty',
     payload: { partyId },
   }
+}
+
+export function navigateToParty(partyId: string) {
+  push(urlPath`/parties/${partyId}`)
 }

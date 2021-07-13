@@ -336,6 +336,8 @@ export default class PartyService {
         type: 'init',
         party: toPartyJson(party),
         time: this.clock.now(),
+        // TODO(2Pac): This will have to be done differently once we start sending more information
+        // for the users.
         userInfos: [
           ...Array.from(party.invites.values()),
           ...Array.from(party.members.values()),
