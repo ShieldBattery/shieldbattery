@@ -24,6 +24,9 @@ export type PartyActions =
   | KickFromPartyBegin
   | KickFromPartySuccess
   | KickFromPartyFailure
+  | ChangePartyLeaderBegin
+  | ChangePartyLeaderSuccess
+  | ChangePartyLeaderFailure
   | ActivateParty
   | DeactivateParty
   | InitParty
@@ -206,6 +209,31 @@ export interface KickFromPartySuccess {
 }
 
 export interface KickFromPartyFailure extends BaseFetchFailure<'@parties/kickFromParty'> {
+  meta: {
+    partyId: string
+    targetId: number
+  }
+}
+
+export interface ChangePartyLeaderBegin {
+  type: '@parties/changePartyLeaderBegin'
+  payload: {
+    partyId: string
+    targetId: number
+  }
+}
+
+export interface ChangePartyLeaderSuccess {
+  type: '@parties/changePartyLeader'
+  payload: void
+  meta: {
+    partyId: string
+    targetId: number
+  }
+  error?: false
+}
+
+export interface ChangePartyLeaderFailure extends BaseFetchFailure<'@parties/changePartyLeader'> {
   meta: {
     partyId: string
     targetId: number

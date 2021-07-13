@@ -104,3 +104,7 @@ export interface AcceptPartyInviteServerBody {
 export interface SendChatMessageServerBody {
   message: string
 }
+
+export interface ChangeLeaderServerBody {
+  targetId: number
+}

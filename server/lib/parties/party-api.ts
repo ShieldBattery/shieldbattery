@@ -7,6 +7,7 @@ import { assertUnreachable } from '../../../common/assert-unreachable'
 import { PARTIES } from '../../../common/flags'
 import {
   AcceptPartyInviteServerBody,
+  ChangeLeaderServerBody,
   InviteToPartyServerBody,
   PartyUser,
   SendChatMessageServerBody,
@@ -109,6 +110,11 @@ export class PartyApi extends HttpApi {
         '/:partyId',
         throttleMiddleware(partyThrottle, ctx => String(ctx.session!.userId)),
         accept,
+      )
+      .post(
+        '/:partyId/changeLeader',
+        throttleMiddleware(partyThrottle, ctx => String(ctx.session!.userId)),
+        changeLeader,
       )
       .delete(
         '/:partyId/:clientId',
@@ -279,6 +285,33 @@ async function sendChatMessage(ctx: RouterContext) {
 
   const partyService = container.resolve(PartyService)
   await partyService.sendChatMessage(partyId, ctx.session!.userId, message)
+
+  ctx.status = 204
+}
+
+async function changeLeader(ctx: RouterContext) {
+  const {
+    params: { partyId },
+    body: { targetId },
+  } = validateRequest(ctx, {
+    params: Joi.object<{ partyId: string; message: string }>({
+      partyId: Joi.string().required(),
+    }),
+    body: Joi.object<ChangeLeaderServerBody>({
+      targetId: Joi.number().required(),
+    }),
+  })
+
+  const foundTarget = await findUserById(targetId)
+  if (!foundTarget) {
+    throw new httpErrors.NotFound('Target user not found')
+  }
+
+  const oldLeader: PartyUser = { id: ctx.session!.userId, name: ctx.session!.userName }
+  const newLeader: PartyUser = { id: foundTarget.id, name: foundTarget.name }
+
+  const partyService = container.resolve(PartyService)
+  await partyService.changeLeader(partyId, oldLeader, newLeader)
 
   ctx.status = 204
 }

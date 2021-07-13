@@ -656,4 +656,63 @@ describe('parties/party-service', () => {
       expect(client2.unsubscribe).toHaveBeenCalledWith(getPartyPath(party.id))
     })
   })
+
+  describe('changeLeader', () => {
+    let leader: PartyUser
+    let party: PartyRecord
+
+    beforeEach(async () => {
+      leader = user1
+      party = await partyService.invite(leader, USER1_CLIENT_ID, user2)
+      party = await partyService.invite(leader, USER1_CLIENT_ID, user3)
+      partyService.acceptInvite(party.id, user2, USER2_CLIENT_ID)
+      partyService.acceptInvite(party.id, user3, USER3_CLIENT_ID)
+    })
+
+    test('should throw if the party is not found', () => {
+      expect(() =>
+        partyService.changeLeader('INVALID_PARTY_ID', leader, user2),
+      ).toThrowErrorMatchingInlineSnapshot(`"Party not found or you're not in it"`)
+    })
+
+    test('should throw if not in party', () => {
+      expect(() =>
+        partyService.changeLeader(party.id, user4, user3),
+      ).toThrowErrorMatchingInlineSnapshot(`"Party not found or you're not in it"`)
+    })
+
+    test('should throw if non-leader tries to change leaders', () => {
+      expect(() =>
+        partyService.changeLeader(party.id, user2, user3),
+      ).toThrowErrorMatchingInlineSnapshot(`"Only party leaders can change leaders"`)
+    })
+
+    test('should throw if the user is not in party', () => {
+      expect(() =>
+        partyService.changeLeader(party.id, leader, user4),
+      ).toThrowErrorMatchingInlineSnapshot(`"Can't make leader a player who is not in your party"`)
+    })
+
+    test('should throw if trying to make yourself a leader', () => {
+      expect(() =>
+        partyService.changeLeader(party.id, leader, leader),
+      ).toThrowErrorMatchingInlineSnapshot(`"You're already a leader"`)
+    })
+
+    test('should update the party record when changing leaders', () => {
+      partyService.changeLeader(party.id, leader, user2)
+
+      expect(party.leader).toEqual(user2)
+    })
+
+    test('should publish "leaderChange" message to the party path', () => {
+      partyService.changeLeader(party.id, leader, user2)
+
+      expect(nydus.publish).toHaveBeenCalledWith(getPartyPath(party.id), {
+        type: 'leaderChange',
+        leader: user2,
+        time: currentTime,
+      })
+    })
+  })
 })
