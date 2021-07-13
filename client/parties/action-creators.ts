@@ -1,6 +1,7 @@
 import {
   AcceptPartyInviteServerBody,
   InviteToPartyServerBody,
+  PartyServiceErrorCode,
   SendChatMessageServerBody,
 } from '../../common/parties'
 import { ThunkAction } from '../dispatch-registry'
@@ -8,7 +9,7 @@ import { push } from '../navigation/routing'
 import { clientId } from '../network/client-id'
 import fetch from '../network/fetch'
 import { apiUrl, urlPath } from '../network/urls'
-import { openSnackbar } from '../snackbars/action-creators'
+import { openSnackbar, TIMING_LONG } from '../snackbars/action-creators'
 import { ActivateParty, DeactivateParty } from './actions'
 
 export function inviteToParty(targetId: number): ThunkAction {
@@ -96,12 +97,14 @@ export function acceptPartyInvite(partyId: string): ThunkAction {
         method: 'POST',
         body: JSON.stringify(requestBody),
       }).catch(err => {
-        // TODO(2Pac): Show an actual reason why the this failed (e.g. party doesn't exist anymore)
-        dispatch(
-          openSnackbar({
-            message: 'An error occurred while accepting an invite',
-          }),
-        )
+        let message = 'An error occurred while accepting an invite'
+        if (err.body.code === PartyServiceErrorCode.NotFoundOrNotInvited) {
+          message = "Party doesn't exist anymore"
+        } else if (err.body.code === PartyServiceErrorCode.PartyFull) {
+          message = 'Party is full'
+        }
+
+        dispatch(openSnackbar({ message, time: TIMING_LONG }))
         throw err
       }),
       meta: params,

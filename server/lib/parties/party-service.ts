@@ -6,6 +6,7 @@ import {
   PartyEvent,
   PartyInitEvent,
   PartyPayload,
+  PartyServiceErrorCode,
   PartyUser,
 } from '../../../common/parties'
 import logger from '../logging/logger'
@@ -20,16 +21,6 @@ export interface PartyRecord {
   invites: Map<number, PartyUser>
   members: Map<number, PartyUser>
   leader: PartyUser
-}
-
-export enum PartyServiceErrorCode {
-  NotFoundOrNotInvited,
-  NotFoundOrNotInParty,
-  InsufficientPermissions,
-  PartyFull,
-  UserOffline,
-  InvalidAction,
-  NotificationFailure,
 }
 
 export class PartyServiceError extends Error {
