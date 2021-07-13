@@ -29,7 +29,6 @@ export type PartyActions =
   | InitParty
   | UpdateInvite
   | UpdateUninvite
-  | UpdateDecline
   | UpdateJoin
   | UpdateLeave
   | UpdateLeaveSelf
@@ -256,15 +255,6 @@ export interface UpdateInvite {
 
 export interface UpdateUninvite {
   type: '@parties/updateUninvite'
-  payload: {
-    partyId: string
-    target: PartyUser
-    time: number
-  }
-}
-
-export interface UpdateDecline {
-  type: '@parties/updateDecline'
   payload: {
     partyId: string
     target: PartyUser

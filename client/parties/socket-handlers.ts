@@ -51,18 +51,6 @@ const eventToAction: EventToActionMap = {
     }
   },
 
-  decline: (partyId, event) => {
-    const { target, time } = event
-    return {
-      type: '@parties/updateDecline',
-      payload: {
-        partyId,
-        target,
-        time,
-      },
-    }
-  },
-
   join: (partyId, event) => {
     const { user, time } = event
     return {

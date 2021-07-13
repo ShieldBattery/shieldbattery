@@ -54,12 +54,6 @@ export interface PartyUninviteEvent {
   time: number
 }
 
-export interface PartyDeclineEvent {
-  type: 'decline'
-  target: PartyUser
-  time: number
-}
-
 export interface PartyJoinEvent {
   type: 'join'
   user: PartyUser
@@ -92,7 +86,6 @@ export type PartyEvent =
   | PartyInitEvent
   | PartyInviteEvent
   | PartyUninviteEvent
-  | PartyDeclineEvent
   | PartyJoinEvent
   | PartyLeaveEvent
   | PartyLeaderChangeEvent

@@ -115,12 +115,10 @@ describe('parties/party-service', () => {
         ).rejects.toThrowErrorMatchingInlineSnapshot(`"Only party leader can invite people"`)
       })
 
-      test('should throw if invite already exists', async () => {
+      test('should not throw if invite already exists', async () => {
         await partyService.invite(leader, USER1_CLIENT_ID, user3)
 
-        await expect(
-          partyService.invite(leader, USER1_CLIENT_ID, user3),
-        ).rejects.toThrowErrorMatchingInlineSnapshot(`"An invite already exists for this user"`)
+        await expect(() => partyService.invite(leader, USER1_CLIENT_ID, user3)).not.toThrow()
       })
 
       test('should throw if invited user is already in the party', async () => {
@@ -269,16 +267,6 @@ describe('parties/party-service', () => {
 
       expect(party.invites).toMatchObject(new Map([[user3.id, user3]]))
     })
-
-    test('should publish "decline" message to the party path', () => {
-      partyService.decline(party.id, user2)
-
-      expect(nydus.publish).toHaveBeenCalledWith(getPartyPath(party.id), {
-        type: 'decline',
-        target: user2,
-        time: currentTime,
-      })
-    })
   })
 
   describe('removeInvite', () => {
@@ -329,10 +317,8 @@ describe('parties/party-service', () => {
       )
     })
 
-    test('should throw if the user is not invited', () => {
-      expect(() =>
-        partyService.removeInvite(party.id, leader, user4),
-      ).toThrowErrorMatchingInlineSnapshot(`"Can't remove invite for a user that wasn't invited"`)
+    test('should not throw if the user is not invited', () => {
+      expect(() => partyService.removeInvite(party.id, leader, user4)).not.toThrow()
     })
 
     test('should update the party record when removed', () => {
