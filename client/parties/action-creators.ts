@@ -179,6 +179,32 @@ export function kickPlayer(partyId: string, targetId: number): ThunkAction {
   }
 }
 
+export function changeLeader(partyId: string, targetId: number): ThunkAction {
+  return dispatch => {
+    const params = { partyId, targetId }
+    dispatch({
+      type: '@parties/changePartyLeaderBegin',
+      payload: params,
+    })
+
+    dispatch({
+      type: '@parties/changePartyLeader',
+      payload: fetch<void>(apiUrl`parties/${partyId}/changeLeader`, {
+        method: 'POST',
+        body: JSON.stringify({ targetId }),
+      }).catch(err => {
+        dispatch(
+          openSnackbar({
+            message: 'An error occurred while changing the leader',
+          }),
+        )
+        throw err
+      }),
+      meta: params,
+    })
+  }
+}
+
 export function activateParty(partyId: string): ActivateParty {
   return {
     type: '@parties/activateParty',

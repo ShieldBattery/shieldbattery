@@ -19,6 +19,7 @@ import { useAppDispatch, useAppSelector } from '../redux-hooks'
 import { background700, background800 } from '../styles/colors'
 import {
   activateParty,
+  changeLeader,
   deactivateParty,
   kickPlayer,
   leaveParty,
@@ -68,15 +69,18 @@ export function OpenSlot() {
 
 export function PlayerSlot({
   name,
-  canKick,
+  hasLeaderActions,
   onKickPlayer,
+  onChangeLeader,
 }: {
   name: string
-  canKick: boolean
+  hasLeaderActions: boolean
   onKickPlayer: () => void
+  onChangeLeader: () => void
 }) {
   const slotActions: Array<[text: string, handler: () => void]> = []
-  if (canKick) {
+  if (hasLeaderActions) {
+    slotActions.push(['Make leader', onChangeLeader])
     slotActions.push(['Kick from party', onKickPlayer])
   }
 
@@ -95,17 +99,20 @@ export function UserList({
   party,
   selfUser,
   onKickPlayer,
+  onChangeLeader,
 }: {
   party: PartyRecord
   selfUser: SelfUserRecord
   onKickPlayer: (userId: number) => void
+  onChangeLeader: (userId: number) => void
 }) {
   const playerSlots = party.members.map(u => (
     <PlayerSlot
       key={u.id}
       name={u.name}
-      canKick={selfUser.id === party.leader.id && selfUser.id !== u.id}
+      hasLeaderActions={selfUser.id === party.leader.id && selfUser.id !== u.id}
       onKickPlayer={() => onKickPlayer(u.id)}
+      onChangeLeader={() => onChangeLeader(u.id)}
     />
   ))
   const emptySlots = Range(playerSlots.size, MAX_PARTY_SIZE).map(i => (
@@ -214,6 +221,10 @@ export function PartyView(props: PartyViewProps) {
     userId => dispatch(kickPlayer(partyId, userId)),
     [partyId, dispatch],
   )
+  const onChangeLeaderClick = useCallback(
+    userId => dispatch(changeLeader(partyId, userId)),
+    [partyId, dispatch],
+  )
 
   const listProps = {
     messages: party.messages,
@@ -227,7 +238,12 @@ export function PartyView(props: PartyViewProps) {
     <Container>
       <StyledChat listProps={listProps} inputProps={inputProps} />
       <RightSide>
-        <UserList party={party} selfUser={selfUser} onKickPlayer={onKickPlayerClick} />
+        <UserList
+          party={party}
+          selfUser={selfUser}
+          onKickPlayer={onKickPlayerClick}
+          onChangeLeader={onChangeLeaderClick}
+        />
         <TextButton
           label={
             <>
