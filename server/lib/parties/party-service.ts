@@ -60,6 +60,8 @@ export default class PartyService {
   private parties = new Map<string, PartyRecord>()
   /** Maps client sockets group -> party ID. Only one client sockets group can be in a party. */
   private clientSocketsToPartyId = new Map<ClientSocketsGroup, string>()
+  /** Maps user ID -> client ID. The client ID is the one that user used to join the party. */
+  private userIdToClientId = new Map<number, string>()
 
   constructor(
     private publisher: TypedPublisher<PartyEvent>,
@@ -281,6 +283,44 @@ export default class PartyService {
     })
   }
 
+  kickPlayer(partyId: string, kickingUser: PartyUser, target: PartyUser) {
+    const party = this.parties.get(partyId)
+    if (!party || !party.members.has(kickingUser.id)) {
+      throw new PartyServiceError(
+        PartyServiceErrorCode.NotFoundOrNotInParty,
+        "Party not found or you're not in it",
+      )
+    }
+
+    if (kickingUser.id !== party.leader.id) {
+      throw new PartyServiceError(
+        PartyServiceErrorCode.InsufficientPermissions,
+        'Only party leaders can kick other people',
+      )
+    }
+
+    if (!party.members.has(target.id)) {
+      throw new PartyServiceError(
+        PartyServiceErrorCode.InvalidAction,
+        "Can't kick player who is not in your party",
+      )
+    }
+
+    if (kickingUser.id === target.id) {
+      throw new PartyServiceError(PartyServiceErrorCode.InvalidAction, "Can't kick yourself")
+    }
+
+    this.publisher.publish(getPartyPath(party.id), {
+      type: 'kick',
+      target,
+      time: this.clock.now(),
+    })
+
+    const clientId = this.userIdToClientId.get(target.id)!
+    const clientSockets = this.getClientSockets(target.id, clientId)
+    this.removeClientFromParty(clientSockets, party)
+  }
+
   private clearInviteNotification(partyId: string, user: PartyUser) {
     this.notificationService
       .retrieveNotifications({ userId: user.id, type: NotificationType.PartyInvite })
@@ -296,6 +336,7 @@ export default class PartyService {
   }
 
   private subscribeToParty(clientSockets: ClientSocketsGroup, party: PartyRecord) {
+    this.userIdToClientId.set(clientSockets.userId, clientSockets.clientId)
     clientSockets.subscribe<PartyInitEvent>(
       getPartyPath(party.id),
       () => ({
@@ -339,6 +380,7 @@ export default class PartyService {
     // leaving the party, or have simply switched to a new one.
     if (clientPartyId === party.id) {
       this.clientSocketsToPartyId.delete(clientSockets)
+      this.userIdToClientId.delete(clientSockets.userId)
     }
 
     clientSockets.unsubscribe(getPartyPath(party.id))

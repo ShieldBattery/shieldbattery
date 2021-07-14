@@ -2,6 +2,7 @@ import type { NydusClient, RouteHandler, RouteInfo } from 'nydus-client'
 import { TypedIpcRenderer } from '../../common/ipc'
 import { PartyEvent } from '../../common/parties'
 import { dispatch, Dispatchable } from '../dispatch-registry'
+import { openSnackbar } from '../snackbars/action-creators'
 
 const ipcRenderer = new TypedIpcRenderer()
 
@@ -124,6 +125,31 @@ const eventToAction: EventToActionMap = {
         time,
         text,
       },
+    }
+  },
+
+  kick: (partyId, event) => (dispatch, getState) => {
+    const { target, time } = event
+    const selfUser = getState().auth.user
+    if (selfUser.id === target.id) {
+      // It was us who has been kicked from the party
+      dispatch(openSnackbar({ message: 'You have been kicked from the party.' }))
+      dispatch({
+        type: '@parties/updateKickSelf',
+        payload: {
+          partyId,
+          time,
+        },
+      })
+    } else {
+      dispatch({
+        type: '@parties/updateKick',
+        payload: {
+          partyId,
+          target,
+          time,
+        },
+      })
     }
   },
 }

@@ -19,8 +19,11 @@ export type PartyActions =
   | LeavePartySuccess
   | LeavePartyFailure
   | SendChatMessageBegin
-  | SendChatMessage
+  | SendChatMessageSuccess
   | SendChatMessageFailure
+  | KickFromPartyBegin
+  | KickFromPartySuccess
+  | KickFromPartyFailure
   | ActivateParty
   | DeactivateParty
   | InitParty
@@ -32,6 +35,8 @@ export type PartyActions =
   | UpdateLeaveSelf
   | UpdateLeaderChange
   | UpdateChatMessage
+  | UpdateKick
+  | UpdateKickSelf
 
 export interface InviteToPartyBegin {
   type: '@parties/inviteToPartyBegin'
@@ -166,7 +171,7 @@ export interface SendChatMessageBegin {
 /**
  * Send a chat message to the party.
  */
-export interface SendChatMessage {
+export interface SendChatMessageSuccess {
   type: '@parties/sendChatMessage'
   payload: void
   meta: {
@@ -180,6 +185,31 @@ export interface SendChatMessageFailure extends BaseFetchFailure<'@parties/sendC
   meta: {
     partyId: string
     message: string
+  }
+}
+
+export interface KickFromPartyBegin {
+  type: '@parties/kickFromPartyBegin'
+  payload: {
+    partyId: string
+    targetId: number
+  }
+}
+
+export interface KickFromPartySuccess {
+  type: '@parties/kickFromParty'
+  payload: void
+  meta: {
+    partyId: string
+    targetId: number
+  }
+  error?: false
+}
+
+export interface KickFromPartyFailure extends BaseFetchFailure<'@parties/kickFromParty'> {
+  meta: {
+    partyId: string
+    targetId: number
   }
 }
 
@@ -284,5 +314,22 @@ export interface UpdateChatMessage {
     from: PartyUser
     time: number
     text: string
+  }
+}
+
+export interface UpdateKick {
+  type: '@parties/updateKick'
+  payload: {
+    partyId: string
+    target: PartyUser
+    time: number
+  }
+}
+
+export interface UpdateKickSelf {
+  type: '@parties/updateKickSelf'
+  payload: {
+    partyId: string
+    time: number
   }
 }

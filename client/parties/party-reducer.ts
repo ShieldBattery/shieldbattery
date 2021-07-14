@@ -7,6 +7,7 @@ import { keyedReducer } from '../reducers/keyed-reducer'
 import {
   InviteToPartyMessageRecord,
   JoinPartyMessageRecord,
+  KickFromPartyMessageRecord,
   LeavePartyMessageRecord,
   PartyLeaderChangeMessageRecord,
   SelfJoinPartyMessageRecord,
@@ -124,18 +125,24 @@ export default keyedReducer(new PartyRecord(), {
       return state
     }
 
-    return state
-      .deleteIn(['members', user.id])
-      .set('hasUnread', !state.activated)
-      .update('messages', messages =>
-        messages.push(
-          new LeavePartyMessageRecord({
-            id: cuid(),
-            time,
-            userId: user.id,
-          }),
-        ),
-      )
+    // This action can be dispatched *after* a player gets kicked as well, in which case there's no
+    // need to do any cleanup, nor display a "leave" message.
+    if (state.get('members').has(user.id)) {
+      return state
+        .deleteIn(['members', user.id])
+        .set('hasUnread', !state.activated)
+        .update('messages', messages =>
+          messages.push(
+            new LeavePartyMessageRecord({
+              id: cuid(),
+              time,
+              userId: user.id,
+            }),
+          ),
+        )
+    } else {
+      return state
+    }
   },
 
   ['@parties/updateLeaveSelf'](state, action) {
@@ -186,6 +193,37 @@ export default keyedReducer(new PartyRecord(), {
         }),
       ),
     )
+  },
+
+  ['@parties/updateKick'](state, action) {
+    const { partyId, target, time } = action.payload
+
+    if (partyId !== state.id) {
+      return state
+    }
+
+    return state
+      .deleteIn(['members', target.id])
+      .set('hasUnread', !state.activated)
+      .update('messages', messages =>
+        messages.push(
+          new KickFromPartyMessageRecord({
+            id: cuid(),
+            time,
+            userId: target.id,
+          }),
+        ),
+      )
+  },
+
+  ['@parties/updateKickSelf'](state, action) {
+    const { partyId } = action.payload
+
+    if (partyId !== state.id) {
+      return state
+    }
+
+    return new PartyRecord()
   },
 
   ['@parties/activateParty'](state, action) {

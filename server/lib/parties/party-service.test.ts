@@ -600,4 +600,74 @@ describe('parties/party-service', () => {
       })
     })
   })
+
+  describe('kickPlayer', () => {
+    let leader: PartyUser
+    let party: PartyRecord
+
+    beforeEach(async () => {
+      leader = user1
+      party = await partyService.invite(leader, USER1_CLIENT_ID, user2)
+      party = await partyService.invite(leader, USER1_CLIENT_ID, user3)
+      partyService.acceptInvite(party.id, user2, USER2_CLIENT_ID)
+      partyService.acceptInvite(party.id, user3, USER3_CLIENT_ID)
+    })
+
+    test('should throw if the party is not found', () => {
+      expect(() =>
+        partyService.kickPlayer('INVALID_PARTY_ID', leader, user2),
+      ).toThrowErrorMatchingInlineSnapshot(`"Party not found or you're not in it"`)
+    })
+
+    test('should throw if not in party', () => {
+      expect(() =>
+        partyService.kickPlayer(party.id, user4, user3),
+      ).toThrowErrorMatchingInlineSnapshot(`"Party not found or you're not in it"`)
+    })
+
+    test('should throw if kicked by non-leader', () => {
+      expect(() =>
+        partyService.kickPlayer(party.id, user2, user3),
+      ).toThrowErrorMatchingInlineSnapshot(`"Only party leaders can kick other people"`)
+    })
+
+    test('should throw if the user is not in party', () => {
+      expect(() =>
+        partyService.kickPlayer(party.id, leader, user4),
+      ).toThrowErrorMatchingInlineSnapshot(`"Can't kick player who is not in your party"`)
+    })
+
+    test('should throw if trying to kick yourself', () => {
+      expect(() =>
+        partyService.kickPlayer(party.id, leader, leader),
+      ).toThrowErrorMatchingInlineSnapshot(`"Can't kick yourself"`)
+    })
+
+    test('should update the party record when kicked', () => {
+      partyService.kickPlayer(party.id, leader, user2)
+
+      expect(party.members).toMatchObject(
+        new Map([
+          [leader.id, leader],
+          [user3.id, user3],
+        ]),
+      )
+    })
+
+    test('should publish "kick" message to the party path', () => {
+      partyService.kickPlayer(party.id, leader, user2)
+
+      expect(nydus.publish).toHaveBeenCalledWith(getPartyPath(party.id), {
+        type: 'kick',
+        target: user2,
+        time: currentTime,
+      })
+    })
+
+    test('should unsubscribe kicked user from the party path', () => {
+      partyService.kickPlayer(party.id, leader, user2)
+
+      expect(client2.unsubscribe).toHaveBeenCalledWith(getPartyPath(party.id))
+    })
+  })
 })

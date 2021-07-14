@@ -1,7 +1,8 @@
-import { OrderedMap, Range } from 'immutable'
+import { Range } from 'immutable'
 import React, { useCallback, useEffect } from 'react'
 import styled from 'styled-components'
-import { MAX_PARTY_SIZE, PartyUser } from '../../common/parties'
+import { MAX_PARTY_SIZE } from '../../common/parties'
+import { SelfUserRecord } from '../auth/auth-records'
 import Avatar from '../avatars/avatar'
 import { openDialog } from '../dialogs/action-creators'
 import { DialogType } from '../dialogs/dialog-type'
@@ -16,15 +17,23 @@ import { replace } from '../navigation/routing'
 import { urlPath } from '../network/urls'
 import { useAppDispatch, useAppSelector } from '../redux-hooks'
 import { background700, background800 } from '../styles/colors'
-import { activateParty, deactivateParty, leaveParty, sendChatMessage } from './action-creators'
+import {
+  activateParty,
+  deactivateParty,
+  kickPlayer,
+  leaveParty,
+  sendChatMessage,
+} from './action-creators'
 import {
   InviteToPartyMessage,
   JoinPartyMessage,
+  KickFromPartyMessage,
   LeavePartyMessage,
   PartyLeaderChangeMessage,
   SelfJoinPartyMessage,
 } from './party-message-layout'
 import { PartyMessageType } from './party-message-records'
+import { PartyRecord } from './party-reducer'
 
 const UserListContainer = styled.div`
   width: 100%;
@@ -57,22 +66,48 @@ export function OpenSlot() {
   )
 }
 
-export function PlayerSlot(props: { name: string }) {
+export function PlayerSlot({
+  name,
+  canKick,
+  onKickPlayer,
+}: {
+  name: string
+  canKick: boolean
+  onKickPlayer: () => void
+}) {
   const slotActions: Array<[text: string, handler: () => void]> = []
+  if (canKick) {
+    slotActions.push(['Kick from party', onKickPlayer])
+  }
 
   return (
     <Slot>
       <SlotProfile>
-        <StyledAvatar user={props.name} />
-        <SlotName as='span'>{props.name}</SlotName>
+        <StyledAvatar user={name} />
+        <SlotName as='span'>{name}</SlotName>
       </SlotProfile>
       {slotActions.length > 0 ? <SlotActions slotActions={slotActions} /> : <div />}
     </Slot>
   )
 }
 
-export function UserList(props: { users: OrderedMap<number, PartyUser> }) {
-  const playerSlots = props.users.map(u => <PlayerSlot key={u.id} name={u.name} />)
+export function UserList({
+  party,
+  selfUser,
+  onKickPlayer,
+}: {
+  party: PartyRecord
+  selfUser: SelfUserRecord
+  onKickPlayer: (userId: number) => void
+}) {
+  const playerSlots = party.members.map(u => (
+    <PlayerSlot
+      key={u.id}
+      name={u.name}
+      canKick={selfUser.id === party.leader.id && selfUser.id !== u.id}
+      onKickPlayer={() => onKickPlayer(u.id)}
+    />
+  ))
   const emptySlots = Range(playerSlots.size, MAX_PARTY_SIZE).map(i => (
     <OpenSlot key={'empty-' + i} />
   ))
@@ -130,6 +165,8 @@ function renderPartyMessage(msg: Message) {
       return <LeavePartyMessage key={msg.id} time={msg.time} userId={msg.userId} />
     case PartyMessageType.LeaderChange:
       return <PartyLeaderChangeMessage key={msg.id} time={msg.time} userId={msg.userId} />
+    case PartyMessageType.KickFromParty:
+      return <KickFromPartyMessage key={msg.id} time={msg.time} userId={msg.userId} />
     default:
       return null
   }
@@ -141,6 +178,7 @@ interface PartyViewProps {
 
 export function PartyView(props: PartyViewProps) {
   const dispatch = useAppDispatch()
+  const selfUser = useAppSelector(s => s.auth.user)
   const party = useAppSelector(s => s.party)
   const partyId = party.id
   const routePartyId = decodeURIComponent(props.params.partyId)
@@ -170,17 +208,10 @@ export function PartyView(props: PartyViewProps) {
     [partyId, dispatch],
   )
 
-  const onInviteClick = useCallback(
-    (event: React.MouseEvent) => {
-      dispatch(openDialog(DialogType.PartyInvite))
-    },
-    [dispatch],
-  )
-
-  const onLeaveClick = useCallback(
-    (event: React.MouseEvent) => {
-      dispatch(leaveParty(partyId))
-    },
+  const onInviteClick = useCallback(() => dispatch(openDialog(DialogType.PartyInvite)), [dispatch])
+  const onLeaveClick = useCallback(() => dispatch(leaveParty(partyId)), [partyId, dispatch])
+  const onKickPlayerClick = useCallback(
+    userId => dispatch(kickPlayer(partyId, userId)),
     [partyId, dispatch],
   )
 
@@ -196,7 +227,7 @@ export function PartyView(props: PartyViewProps) {
     <Container>
       <StyledChat listProps={listProps} inputProps={inputProps} />
       <RightSide>
-        <UserList users={party.members} />
+        <UserList party={party} selfUser={selfUser} onKickPlayer={onKickPlayerClick} />
         <TextButton
           label={
             <>

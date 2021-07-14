@@ -32,9 +32,15 @@ const partyThrottle = createThrottle('parties', {
   window: 60000,
 })
 
-const sendChatMessageThrottle = createThrottle('sendChatMessage', {
+const sendChatMessageThrottle = createThrottle('partyChatMessage', {
   rate: 30,
   burst: 90,
+  window: 60000,
+})
+
+const kickPlayerThrottle = createThrottle('partyKick', {
+  rate: 30,
+  burst: 50,
   window: 60000,
 })
 
@@ -106,8 +112,24 @@ export class PartyApi extends HttpApi {
       )
       .delete(
         '/:partyId/:clientId',
-        throttleMiddleware(partyThrottle, ctx => String(ctx.session!.userId)),
-        leave,
+        async (ctx, next) => {
+          let throttle
+          if (ctx.query.type === 'leave') {
+            throttle = partyThrottle
+          } else if (ctx.query.type === 'kick') {
+            throttle = kickPlayerThrottle
+          } else {
+            throw new httpErrors.BadRequest('Invalid leave type: ' + ctx.query.type)
+          }
+
+          const isLimited = await throttle.rateLimit(String(ctx.session!.userId))
+          if (isLimited) {
+            throw new httpErrors.TooManyRequests()
+          } else {
+            await next()
+          }
+        },
+        leaveOrKick,
       )
       .post(
         '/:partyId/messages',
@@ -209,18 +231,35 @@ async function accept(ctx: RouterContext) {
   ctx.status = 204
 }
 
-async function leave(ctx: RouterContext) {
+async function leaveOrKick(ctx: RouterContext) {
   const {
     params: { partyId, clientId },
+    query: { type },
   } = validateRequest(ctx, {
-    params: Joi.object<{ partyId: string; clientId: string }>({
+    params: Joi.object<{ partyId: string; clientId: string | number }>({
       partyId: Joi.string().required(),
-      clientId: Joi.string().required(),
+      clientId: Joi.alternatives(Joi.string(), Joi.number()).required(),
+    }),
+    query: Joi.object<{ type: 'leave' | 'kick' }>({
+      type: Joi.string().valid('leave', 'kick').required(),
     }),
   })
 
   const partyService = container.resolve(PartyService)
-  await partyService.leaveParty(partyId, ctx.session!.userId, clientId)
+
+  if (type === 'leave') {
+    await partyService.leaveParty(partyId, ctx.session!.userId, clientId as string)
+  } else if (type === 'kick') {
+    const foundTarget = await findUserById(clientId as number)
+    if (!foundTarget) {
+      throw new httpErrors.NotFound('Target user not found')
+    }
+
+    const kickingUser: PartyUser = { id: ctx.session!.userId, name: ctx.session!.userName }
+    const target: PartyUser = { id: foundTarget.id, name: foundTarget.name }
+
+    await partyService.kickPlayer(partyId, kickingUser, target)
+  }
 
   ctx.status = 204
 }

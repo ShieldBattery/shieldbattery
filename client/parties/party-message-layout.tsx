@@ -75,3 +75,18 @@ export const PartyLeaderChangeMessage = React.memo<{ time: number; userId: numbe
     </SystemMessage>
   )
 })
+
+export const KickFromPartyMessage = React.memo<{ time: number; userId: number }>(props => {
+  const { time, userId } = props
+  return (
+    <SystemMessage time={time}>
+      <span>
+        &lt;&lt;{' '}
+        <SystemImportant>
+          <ConnectedUsername userId={userId} />
+        </SystemImportant>{' '}
+        has been kicked from the party
+      </span>
+    </SystemMessage>
+  )
+})

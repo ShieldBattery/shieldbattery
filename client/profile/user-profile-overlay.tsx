@@ -3,7 +3,7 @@ import { PARTIES } from '../../common/flags'
 import { User } from '../../common/users/user-info'
 import MenuItem from '../material/menu/item'
 import { Popover, PopoverProps } from '../material/popover'
-import { inviteToParty, removePartyInvite } from '../parties/action-creators'
+import { inviteToParty, kickPlayer, removePartyInvite } from '../parties/action-creators'
 import { useAppDispatch, useAppSelector } from '../redux-hooks'
 import { navigateToWhisper } from '../whispers/action-creators'
 import { navigateToUserProfile } from './action-creators'
@@ -64,6 +64,14 @@ export function ConnectedUserProfileOverlay({
     onPopoverDismiss()
   }, [party, user, dispatch, onPopoverDismiss])
 
+  const onKickPlayerClick = useCallback(
+    userId => {
+      dispatch(kickPlayer(party.id, user!.id))
+      onPopoverDismiss()
+    },
+    [party, user, dispatch, onPopoverDismiss],
+  )
+
   if (!user) {
     return null
   }
@@ -78,7 +86,9 @@ export function ConnectedUserProfileOverlay({
       const isAlreadyInParty = party.members.has(user.id)
       const hasInvite = party.invites.has(user.id)
       if (isAlreadyInParty) {
-        // TODO(2Pac): Add a "Kick from party" action?
+        actions.push(
+          <MenuItem key='kick-party' text='Kick from party' onClick={onKickPlayerClick} />,
+        )
       } else if (hasInvite) {
         actions.push(
           <MenuItem key='invite' text='Uninvite from party' onClick={onRemovePartyInvite} />,

@@ -82,6 +82,12 @@ export interface PartyChatMessageEvent extends ChatMessage {
   type: 'chatMessage'
 }
 
+export interface PartyKickEvent {
+  type: 'kick'
+  target: PartyUser
+  time: number
+}
+
 export type PartyEvent =
   | PartyInitEvent
   | PartyInviteEvent
@@ -91,6 +97,7 @@ export type PartyEvent =
   | PartyLeaveEvent
   | PartyLeaderChangeEvent
   | PartyChatMessageEvent
+  | PartyKickEvent
 
 export interface InviteToPartyServerBody {
   clientId: string

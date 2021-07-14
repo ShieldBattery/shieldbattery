@@ -126,16 +126,16 @@ export function leaveParty(partyId: string): ThunkAction {
 
     dispatch({
       type: '@parties/leaveParty',
-      payload: fetch<void>(apiUrl`parties/${partyId}/${clientId}`, { method: 'DELETE' }).catch(
-        err => {
-          dispatch(
-            openSnackbar({
-              message: 'An error occurred while leaving the party',
-            }),
-          )
-          throw err
-        },
-      ),
+      payload: fetch<void>(apiUrl`parties/${partyId}/${clientId}?type=leave`, {
+        method: 'DELETE',
+      }).catch(err => {
+        dispatch(
+          openSnackbar({
+            message: 'An error occurred while leaving the party',
+          }),
+        )
+        throw err
+      }),
       meta: params,
     })
   }
@@ -155,6 +155,31 @@ export function sendChatMessage(partyId: string, message: string): ThunkAction {
       payload: fetch<void>(apiUrl`parties/${partyId}/messages`, {
         method: 'POST',
         body: JSON.stringify(requestBody),
+      }),
+      meta: params,
+    })
+  }
+}
+
+export function kickPlayer(partyId: string, targetId: number): ThunkAction {
+  return dispatch => {
+    const params = { partyId, targetId }
+    dispatch({
+      type: '@parties/kickFromPartyBegin',
+      payload: params,
+    })
+
+    dispatch({
+      type: '@parties/kickFromParty',
+      payload: fetch<void>(apiUrl`parties/${partyId}/${targetId}?type=kick`, {
+        method: 'DELETE',
+      }).catch(err => {
+        dispatch(
+          openSnackbar({
+            message: 'An error occurred while kicking the player',
+          }),
+        )
+        throw err
       }),
       meta: params,
     })
